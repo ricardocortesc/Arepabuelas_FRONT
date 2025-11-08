@@ -45,7 +45,7 @@ const Header = () => {
       <div className="container mx-auto max-w-7xl px-4">
         <div className="flex h-16 items-center justify-between">
           <button onClick={() => setPage('home')} className="text-2xl font-bold text-red-600">
-            Arepa<span className="text-gray-800">buelas</span>
+            Restaurante<span className="text-gray-800">Seguro</span>
           </button>
           
           <div className="hidden md:flex items-center space-x-6">
@@ -53,10 +53,9 @@ const Header = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" onClick={() => setPage('cart')} className="relative"> {/* 1. Añadimos 'relative' al botón */}
+            <Button variant="ghost" size="icon" onClick={() => setPage('cart')} className="relative">
               <ShoppingCart className="h-5 w-5" />
               {cartItemCount > 0 && (
-                // 2. Ajustamos la posición y el tamaño para que sea relativo al botón
                 <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] text-white">
                   {cartItemCount}
                 </span>
@@ -65,7 +64,8 @@ const Header = () => {
 
             {currentUser ? (
               <div className="hidden md:flex items-center space-x-2">
-                <img src={currentUser.photo} alt={currentUser.name} className="h-8 w-8 rounded-full" />
+                {/* CAMBIO: Usamos photoUrl del token decodificado */}
+                <img src={currentUser.photoUrl || 'https://placehold.co/100x100/888888/FFFFFF?text=User'} alt={currentUser.name} className="h-8 w-8 rounded-full" />
                 <Button variant="outline" size="sm" onClick={logout}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Salir
@@ -97,7 +97,7 @@ const Header = () => {
           <div className="border-t my-4"></div>
           {currentUser ? (
             <div className="flex items-center space-x-2">
-              <img src={currentUser.photo} alt={currentUser.name} className="h-8 w-8 rounded-full" />
+              <img src={currentUser.photoUrl || 'https://placehold.co/100x100/888888/FFFFFF?text=User'} alt={currentUser.name} className="h-8 w-8 rounded-full" />
               <Button variant="outline" className="w-full" onClick={logout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Salir

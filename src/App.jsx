@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from './context/AppContext';
+import { User } from 'lucide-react'; // Importamos el icono
 
 // Layout
 import Header from './layout/Header';
@@ -28,19 +29,11 @@ const RenderPage = () => {
     return <LoginPage />;
   }
   
-  // Si el usuario no está aprobado, mostrar mensaje (excepto en login/register)
-  if (currentUser && !currentUser.approved && mainPage !== 'login' && mainPage !== 'register') {
-    return (
-      <div className="text-center py-20">
-        <User className="h-24 w-24 mx-auto text-yellow-500" />
-        <h2 className="text-2xl font-bold mt-4 mb-2">Cuenta Pendiente</h2>
-        <p className="text-gray-500">Tu cuenta está siendo revisada por un administrador. Serás notificado cuando sea aprobada.</p>
-      </div>
-    );
-  }
+  // CAMBIO: La lógica de 'aprobado' ahora la maneja el backend en el login.
+  // Ya no necesitamos esta comprobación aquí.
   
   // Si intenta acceder a admin sin ser admin
-  if (mainPage === 'admin' && currentUser?.role !== 'admin') {
+  if (mainPage === 'admin' && currentUser?.role !== 'ADMIN') { // Tu backend usa 'admin' o 'ADMIN'? Ajusta si es necesario
     return <HomePage />; // Redirigir al inicio
   }
 

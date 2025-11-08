@@ -17,11 +17,18 @@ const RegisterPage = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [photo, setPhoto] = useState(''); // REQUISITO: Foto
+  const [photoFile, setPhotoFile] = useState(null); // CAMBIO: De URL a File
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    register(name, email, password, photo);
+    // La lógica ahora está en AppContext
+    await register(name, email, password, photoFile);
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setPhotoFile(e.target.files[0]);
+    }
   };
 
   return (
@@ -68,14 +75,14 @@ const RegisterPage = () => {
                 required
               />
             </div>
+            {/* CAMBIO: Input de URL a file */}
             <div className="space-y-2">
-              <Label htmlFor="photo">URL de tu Foto (Opcional)</Label>
+              <Label htmlFor="photo">Foto de Perfil (Opcional)</Label>
               <Input
                 id="photo"
-                type="text"
-                placeholder="https://tu-foto.com/imagen.png"
-                value={photo}
-                onChange={(e) => setPhoto(e.target.value)}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
               />
             </div>
             <Button type="submit" className="w-full">

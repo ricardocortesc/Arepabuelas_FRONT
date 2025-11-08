@@ -6,8 +6,8 @@ import { Label } from '../components/ui/Label';
 import { Card, CardContent } from '../components/ui/Card';
 import { Shield } from 'lucide-react';
 
-// REQUISITO: Simulación de Pagos y Cupón
 const CheckoutPage = () => {
+  // Sacamos 'purchaseHistory' para saber si es un nuevo usuario
   const { cart, cartTotal, placeOrder, setPage, purchaseHistory } = useApp();
   const [coupon, setCoupon] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
@@ -22,12 +22,18 @@ const CheckoutPage = () => {
   const isNewUser = purchaseHistory.length === 0;
   
   const handleCouponApply = () => {
+    // La lógica de validación del cupón ahora está en el backend.
+    // Aquí solo simulamos la UI para 'NUEVO10'
     if (isNewUser && coupon.toUpperCase() === 'NUEVO10') {
       setCouponApplied(true);
+    } else {
+      // Opcional: podrías llamar a un endpoint /api/validate-coupon
+      setCouponApplied(false);
     }
   };
 
-  const finalTotal = couponApplied ? (cartTotal * 0.9).toFixed(2) : cartTotal;
+  // Mantenemos el total local para la UI, aunque el backend lo recalculará
+  const finalTotal = (couponApplied && isNewUser) ? (cartTotal * 0.9).toFixed(2) : cartTotal;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -36,36 +42,26 @@ const CheckoutPage = () => {
       const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
       const matches = v.match(/.{1,4}/g);
       setPaymentInfo(prev => ({ ...prev, [name]: matches ? matches.join(' ') : '' }));
-    
-    // --- INICIO DE LA CORRECIÓN 2 ---
     } else if (name === 'expiry') {
-      // 1. Limpiamos solo caracteres no numéricos
       const v = value.replace(/[^0-9]/gi, '');
-      
-      // 2. Aplicamos el formato MM/YY automáticamente
       let formattedValue = v;
       if (v.length > 2) {
-        // Insertamos el slash después de MM y limitamos a 4 dígitos (MMYY)
         formattedValue = v.substring(0, 2) + '/' + v.substring(2, 4);
       }
-      
       setPaymentInfo(prev => ({ ...prev, [name]: formattedValue }));
-    // --- FIN DE LA CORRECIÓN 2 ---
-
     } else {
       setPaymentInfo(prev => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validación simple
     if (paymentInfo.cardNumber.length !== 19 || paymentInfo.expiry.length !== 5 || paymentInfo.cvv.length < 3) {
       alert("Por favor, introduce datos de tarjeta válidos (simulados).");
       return;
     }
-    // Llama a la función del context para procesar la orden
-    placeOrder(paymentInfo, couponApplied);
+    // La lógica ahora está en AppContext
+    await placeOrder(paymentInfo, couponApplied);
   };
 
   if (cart.length === 0) {
@@ -129,20 +125,20 @@ const CheckoutPage = () => {
               </div>
               
               <div className="border-t my-4 pt-4">
-                {isNewUser && !couponApplied && (
+                {isNewUser && (
                   <div className="flex space-x-2 mb-4">
                     <Input placeholder="Cupón: NUEVO10" value={coupon} onChange={(e) => setCoupon(e.target.value)} />
                     <Button variant="secondary" onClick={handleCouponApply}>Aplicar</Button>
                   </div>
                 )}
-                {couponApplied && (
+                {couponApplied && isNewUser && (
                   <p className="text-green-600 font-semibold mb-2">¡Cupón 'NUEVO10' aplicado! (-10%)</p>
                 )}
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
                   <span>${cartTotal}</span>
                 </div>
-                {couponApplied && (
+                {couponApplied && isNewUser && (
                   <div className="flex justify-between text-green-600">
                     <span>Descuento</span>
                     <span>-${(cartTotal * 0.1).toFixed(2)}</span>
@@ -156,7 +152,6 @@ const CheckoutPage = () => {
             </CardContent>
           </Card>
         </div>
-        
       </div>
     </div>
   );

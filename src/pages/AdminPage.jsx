@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -6,26 +6,54 @@ import { Label } from '../components/ui/Label';
 import { Card } from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
 import { UserCheck, Package, Plus, CheckCircle } from 'lucide-react';
+import { apiGetPendingUsers } from '../lib/api'; // Importamos la API
 
 // REQUISITOS: Validar Usuarios y Crear Productos
 const AdminPage = () => {
-  const { users, products, approveUser, createProduct } = useApp();
+  const { products, createProduct, approveUser, showNotification } = useApp();
   const [view, setView] = useState('users'); // 'users' o 'products'
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', description: '', price: '', image: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', description: '', price: '' });
+  const [imageFile, setImageFile] = useState(null); // CAMBIO: de URL a File
+  const [pendingUsers, setPendingUsers] = useState([]); // Estado local para usuarios pendientes
 
-  const pendingUsers = users.filter(u => !u.approved);
+  // Cargar usuarios pendientes cuando la vista cambia a 'users'
+  useEffect(() => {
+    if (view === 'users') {
+      fetchPendingUsers();
+    }
+  }, [view]);
 
-  const handleProductSubmit = (e) => {
+  const fetchPendingUsers = async () => {
+    try {
+      const usersData = await apiGetPendingUsers();
+      setPendingUsers(usersData);
+    } catch (error) {
+      showNotification('Error al cargar usuarios pendientes.', 'error');
+    }
+  };
+
+  const handleProductSubmit = async (e) => {
     e.preventDefault();
-    const success = createProduct({
-      ...newProduct,
-      price: parseFloat(newProduct.price)
-    });
+    // La lógica ahora está en AppContext
+    const success = await createProduct(newProduct, imageFile);
     if (success) {
       setIsModalOpen(false);
-      setNewProduct({ name: '', description: '', price: '', image: '' });
+      setNewProduct({ name: '', description: '', price: '' });
+      setImageFile(null);
     }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
+    }
+  };
+  
+  const handleApproveUser = async (userId) => {
+      await approveUser(userId);
+      // Recargamos la lista
+      fetchPendingUsers();
   };
 
   return (
@@ -53,13 +81,13 @@ const AdminPage = () => {
               {pendingUsers.map(user => (
                 <Card key={user.id} className="flex items-center justify-between p-4">
                   <div className="flex items-center space-x-3">
-                    <img src={user.photo} alt={user.name} className="h-10 w-10 rounded-full" />
+                    <img src={user.photoUrl || 'https://placehold.co/100x100/888888/FFFFFF?text=User'} alt={user.name} className="h-10 w-10 rounded-full" />
                     <div>
                       <p className="font-semibold">{user.name}</p>
                       <p className="text-sm text-gray-500">{user.email}</p>
                     </div>
                   </div>
-                  <Button size="sm" onClick={() => approveUser(user.id)}>
+                  <Button size="sm" onClick={() => handleApproveUser(user.id)}>
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Aprobar
                   </Button>
@@ -83,7 +111,7 @@ const AdminPage = () => {
           <div className="space-y-3">
             {products.map(product => (
               <Card key={product.id} className="flex items-center p-4">
-                <img src={product.image} alt={product.name} className="h-16 w-16 rounded-lg object-cover" />
+                <img src={product.image || 'https://placehold.co/600x400/888888/FFFFFF?text=Producto'} alt={product.name} className="h-16 w-16 rounded-lg object-cover" />
                 <div className="flex-grow ml-4">
                   <h3 className="text-lg font-semibold">{product.name}</h3>
                   <p className="text-gray-500">${product.price}</p>
@@ -110,10 +138,10 @@ const AdminPage = () => {
             <Label htmlFor="prodPrice">Precio</Label>
             <Input id="prodPrice" type="number" step="0.01" min="0" value={newProduct.price} onChange={(e) => setNewProduct(p => ({ ...p, price: e.target.value }))} required />
           </div>
+          {/* CAMBIO: Input de URL a file */}
           <div>
-            <Label htmlFor="prodImage">URL de la Imagen</Label>
-            <Input id="prodImage" placeholder="https://..." value={newProduct.image} onChange={(e) => setNewProduct(p => ({ ...p, image: e.target.value }))} />
-            <p className="text-xs text-gray-500 mt-1">La carga de archivos se simula con un enlace (URL).</p>
+            <Label htmlFor="prodImage">Imagen del Producto (Opcional)</Label>
+            <Input id="prodImage" type="file" accept="image/*" onChange={handleFileChange} />
           </div>
           <div className="flex justify-end space-x-2 pt-4">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>Cancelar</Button>

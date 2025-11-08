@@ -1,14 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { ShoppingCart, ArrowLeft } from 'lucide-react';
+import { apiGetProductById, apiGetProductComments } from '../lib/api'; // Importamos API
 
 const ProductDetailPage = ({ id }) => {
-  const { products, addToCart, addProductComment, setPage, currentUser } = useApp();
-  const [commentText, setCommentText] = useState('');
+  const { addToCart, addProductComment, setPage, currentUser, showNotification } = useApp();
   
-  const product = products.find(p => p.id === id);
+  // Estado local para el producto y sus comentarios
+  const [product, setProduct] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Cargar el producto y sus comentarios al montar la página
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const productData = await apiGetProductById(id);
+        const commentsData = await apiGetProductComments(id);
+        
+        // Mapeamos 'imageUrl' a 'image'
+        setProduct({ ...productData, image: productData.imageUrl });
+        // Mapeamos DTO a lo que el frontend espera (asumimos que el DTO tiene 'user' como objeto o 'userName')
+        setComments(commentsData.map(c => ({...c, user: c.userName || 'Usuario'}))); // Ajusta 'c.userName'
+      } catch (error) {
+        showNotification('Error al cargar el producto.', 'error');
+        setPage('home'); // Volver a home si falla
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [id, setPage, showNotification]);
+
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (commentText.trim()) {
+      await addProductComment(id, commentText);
+      // Recargar comentarios después de añadir uno nuevo
+      const commentsData = await apiGetProductComments(id);
+      setComments(commentsData.map(c => ({...c, user: c.userName || 'Usuario'})));
+      setCommentText('');
+    }
+  };
+  
+  if (isLoading) {
+      return <div className="text-center py-20">Cargando producto...</div>;
+  }
 
   if (!product) {
     return (
@@ -19,14 +60,6 @@ const ProductDetailPage = ({ id }) => {
     );
   }
 
-  const handleCommentSubmit = (e) => {
-    e.preventDefault();
-    if (commentText.trim()) {
-      addProductComment(id, commentText);
-      setCommentText('');
-    }
-  };
-
   return (
     <div className="animate-fade-in">
       <Button variant="outline" size="sm" onClick={() => setPage('home')} className="mb-4">
@@ -34,7 +67,7 @@ const ProductDetailPage = ({ id }) => {
         Volver al menú
       </Button>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-        <img src={product.image} alt={product.name} className="w-full h-auto rounded-xl shadow-lg object-cover aspect-square" />
+        <img src={product.image || 'https://placehold.co/600x400/888888/FFFFFF?text=Producto'} alt={product.name} className="w-full h-auto rounded-xl shadow-lg object-cover aspect-square" />
         
         <div className="flex flex-col justify-center">
           <h1 className="text-4xl font-bold mb-4">{product.name}</h1>
@@ -51,11 +84,12 @@ const ProductDetailPage = ({ id }) => {
           <div className="mt-8 border-t pt-6">
             <h3 className="text-2xl font-semibold mb-4">Comentarios</h3>
             <div className="space-y-4 max-h-48 overflow-y-auto mb-4 pr-2">
-              {product.comments.length === 0 ? (
+              {comments.length === 0 ? (
                 <p className="text-gray-500">Aún no hay comentarios. ¡Sé el primero!</p>
               ) : (
-                product.comments.map(comment => (
+                comments.map(comment => (
                   <div key={comment.id} className="p-3 bg-gray-50 rounded-lg border">
+                    {/* El DTO solo tiene userId, deberías poblar el nombre en el backend */}
                     <p className="font-semibold text-gray-800">{comment.user}</p>
                     <p className="text-gray-600">{comment.text}</p>
                   </div>

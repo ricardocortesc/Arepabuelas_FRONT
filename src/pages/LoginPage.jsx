@@ -17,10 +17,13 @@ const LoginPage = () => {
   const { login, setPage } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // Estado de carga
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    login(email, password);
+    setIsLoading(true);
+    await login(email, password); // La lógica ahora está en AppContext
+    setIsLoading(false);
   };
 
   return (
@@ -43,6 +46,7 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -54,18 +58,23 @@ const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
-            <Button type="submit" className="w-full">
-              <LogIn className="h-4 w-4 mr-2" />
-              Entrar
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Entrando...' : (
+                <>
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Entrar
+                </>
+              )}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex-col">
           <p className="text-sm text-gray-600">
             ¿No tienes cuenta?{' '}
-            <Button variant="link" className="p-0" onClick={() => setPage('register')}>
+            <Button variant="link" className="p-0" onClick={() => setPage('register')} disabled={isLoading}>
               Regístrate aquí
             </Button>
           </p>
